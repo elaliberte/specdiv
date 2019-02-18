@@ -1,0 +1,2 @@
+# specdiv
+Partitioning spectral diversity.
