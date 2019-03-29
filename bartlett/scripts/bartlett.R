@@ -14,11 +14,6 @@ library(cowplot)
 library(magick)
 
 
-
-library(rgdal)
-library(SphericalCubature)
-library(signal)
-
 ### Read spectral diversity functions ----
 source('functions/specdiv_functions.R')
 
