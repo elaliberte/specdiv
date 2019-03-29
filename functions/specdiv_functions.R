@@ -252,12 +252,12 @@ specdiv <- function(cube, fact = 40, prop = 0.5, n = 1) {
       group_by(group) %>% 
       sample_n(size = min_pixels) %>% 
       ungroup()
-    xy_all <- select(cube_points, x, y)
-    xy_plots <- select(plots_points, x, y)
+    xy_all <- dplyr::select(cube_points, x, y)
+    xy_plots <- dplyr::select(plots_points, x, y)
     
     # Gamma diversity
     cube_points_sel_gamma <- cube_points %>%
-      select(-x, -y, -group)
+      dplyr::select(-x, -y, -group)
     sdiv_gamma <- sum_squares(cube_points_sel_gamma)
     gamma_ss[i] <- sdiv_gamma$ss
     gamma_sdiv[i] <- sdiv_gamma$sdiv
@@ -265,10 +265,10 @@ specdiv <- function(cube, fact = 40, prop = 0.5, n = 1) {
     
     # Alpha diversity
     cube_points_sel_alpha <- cube_points %>%
-      select(-x, -y)
+      dplyr::select(-x, -y)
     sdiv_alpha <- cube_points_sel_alpha %>% 
       group_by(group) %>% 
-      do(res = sum_squares(Y = select(., -group)) )
+      do(res = sum_squares(Y = dplyr::select(., -group)) )
     # Get sdiv for each community
     alpha_sdiv_tmp <- tibble(rep = i, group = sdiv_alpha$group, sdiv = sapply(sdiv_alpha$res, function(x) x$sdiv))
     # store
@@ -284,7 +284,7 @@ specdiv <- function(cube, fact = 40, prop = 0.5, n = 1) {
     
     # Beta diversity
     cube_points_sel_beta <- cube_points %>%
-      select(-x, -y)
+      dplyr::select(-x, -y)
     sdiv_beta <- sum_squares_beta(cube_points_sel_beta, m = min_pixels)
     beta_ss[i] <- sdiv_beta$ss
     beta_sdiv[i] <- sdiv_beta$sdiv
@@ -300,22 +300,22 @@ specdiv <- function(cube, fact = 40, prop = 0.5, n = 1) {
   # LCSD beta
   lcsd_beta_values <- beta_lcsd %>% 
     rename(lcsd_beta = lcsd) %>% 
-    select(-rep) %>% 
+    dplyr::select(-rep) %>% 
     group_by(group) %>% 
     summarise_all(mean) %>% 
     ungroup() %>% 
-    select(-group)
+    dplyr::select(-group)
   lcsd_beta_df <- SpatialPixelsDataFrame(xy_plots, lcsd_beta_values, proj4string = CRS(proj4string(cube) ))
   lcsd_beta_raster <- raster(lcsd_beta_df)
   
   # LCSS beta
   lcss_beta_values <- beta_lcss %>% 
     rename(lcss_beta = lcss) %>% 
-    select(-rep) %>% 
+    dplyr::select(-rep) %>% 
     group_by(group) %>% 
     summarise_all(mean) %>% 
     ungroup() %>% 
-    select(-group)
+    dplyr::select(-group)
   lcss_beta_df <- SpatialPixelsDataFrame(xy_plots, lcss_beta_values, proj4string = CRS(proj4string(cube) ))
   lcss_beta_raster <- raster(lcss_beta_df)
   
@@ -323,11 +323,11 @@ specdiv <- function(cube, fact = 40, prop = 0.5, n = 1) {
   fcsd_beta <- colMeans(beta_fcsd)
   fcsd_gamma <- colMeans(gamma_fcsd)
   fcsd_alpha_values <- alpha_fcsd %>% 
-    select(-rep) %>% 
+    dplyr::select(-rep) %>% 
     group_by(group) %>% 
     summarise_all(mean) %>% 
     ungroup() %>% 
-    select(-group)
+    dplyr::select(-group)
   fcsd_alpha_df <- SpatialPixelsDataFrame(xy_plots, fcsd_alpha_values, proj4string = CRS(proj4string(cube) ))
   fcsd_alpha_brick <- brick(fcsd_alpha_df)
   fcsd_alpha_mean <- colMeans(fcsd_alpha_values)
@@ -336,10 +336,10 @@ specdiv <- function(cube, fact = 40, prop = 0.5, n = 1) {
   ss_beta <- mean(beta_ss)
   ss_gamma <- mean(gamma_ss)
   ss_alpha_sum <- alpha_ss %>%
-    select(-group) %>% 
+    dplyr::select(-group) %>% 
     group_by(rep) %>% 
     summarise_all(sum) %>% 
-    select(ss) %>% 
+    dplyr::select(ss) %>% 
     summarise_all(mean) %>% 
     as.double()
   
@@ -348,11 +348,11 @@ specdiv <- function(cube, fact = 40, prop = 0.5, n = 1) {
   sdiv_gamma <- mean(gamma_sdiv)
   sdiv_alpha_values <- alpha_sdiv %>% 
     rename(sdiv_alpha = sdiv) %>% 
-    select(-rep) %>% 
+    dplyr::select(-rep) %>% 
     group_by(group) %>% 
     summarise_all(mean) %>% 
     ungroup() %>% 
-    select(-group)
+    dplyr::select(-group)
   sdiv_alpha_df <- SpatialPixelsDataFrame(xy_plots, sdiv_alpha_values, proj4string = CRS(proj4string(cube) ))
   sdiv_alpha_raster <- raster(sdiv_alpha_df)
   sdiv_alpha_mean <- mean(sdiv_alpha_values$sdiv_alpha)
