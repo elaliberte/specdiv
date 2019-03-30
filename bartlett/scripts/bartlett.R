@@ -160,7 +160,8 @@ plotRGB(cube_norm,
         r = 80, g = 52, b = 24, stretch = 'Lin')
 dev.off()
 
-##### PCA-----
+
+##### PCA scaling = 1 -----
 # Run PCA, scaling = 1 (preserves Euclidean distance) (Warning: takes several minutes)
 pc_scaling1 <- pca(cube_norm, scaling = 1)
 
@@ -436,7 +437,7 @@ dev.off()
 plot_sizes <- seq(2, 140, by = 2)
 
 # Number of resampling for each plot size
-times <- 1
+times <- 30
 
 # For loop
 sim_ss_table <- tibble()
@@ -707,7 +708,6 @@ dev.off()
 
 ##### Try with PCA scaling = 2 -----
 
-##### PCA-----
 # Run PCA, scaling = 2 (preserves Mahalanobis distance) (Warning: takes several minutes)
 pc_scaling2 <- pca(cube_norm, scaling = 2)
 
@@ -780,7 +780,7 @@ ggsave('bartlett/figures/alpha_fcsd_plot_scaling2.png',
        plot = alpha_fcsd_plot_scaling2, width = 5, height = 4, dpi = 600)
 
 
-# Make multi-panel plot with RGB, 3PCs, LCSD, SDalpha
+# Make multi-panel plot with RGB, 3PCs, LCSD, SD alpha
 # Warning: takes a few minutes
 png('bartlett/figures/RGB_3PCs_LCSD_SD_scaling2.png', width = 5, height = 4, res = 1200, units = 'in')
 plot_grid(gplotRGB, beta_PC_scaling2, beta_plot_scaling2, alpha_PC_scaling2, alpha_plot_scaling2, align = 'hv', nrow = 1)
