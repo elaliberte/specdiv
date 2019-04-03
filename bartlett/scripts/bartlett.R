@@ -284,12 +284,14 @@ cube_with_shade_plot <- ggRGB(cube,
                          r = 56, g = 28, b = 14,
                          stretch = 'lin') +
   ggtitle('With shadows') +
-  theme(plot.title = element_text(hjust = 0.5, size = 8) )
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5, size = 8) ) 
 cube_with_shade_plot
 cube_no_shade_plot <- ggRGB(cube_no_shade,
                          r = 56, g = 28, b = 14,
                          stretch = 'lin') +
   ggtitle('Shadows removed') +
+  theme_void() +
   theme(plot.title = element_text(hjust = 0.5, size = 8) )
 cube_no_shade_plot
 

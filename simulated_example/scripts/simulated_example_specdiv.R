@@ -82,7 +82,7 @@ col_means <- site_scores %>%
             blue = mean(blue)) %>% 
   mutate(RGB_col = rgb(red, green, blue) )
 
-# Draw PCA biplot, type 2 scaling
+# Draw PCA biplot, type 1 scaling
 pca_plot <- ggplot(site_scores, aes(x = PC1, y = PC2)) +
   stat_chull(aes(group = scientificName, fill = scientificName), alpha = 0.5, geom = 'polygon') +
   geom_point(colour = site_scores$RGB_col, size = 2.5) +
@@ -101,8 +101,8 @@ pca_plot2 <- pca_plot + xlab('PC 1 (71.0%)')
 
 
 # Save plot as PDF and PNG
-ggsave('simulated_example/figures/pca_plot.png', plot = pca_plot2, width = 4, height = 3, dpi = 600)
-ggsave('simulated_example/figures/pca_plot.pdf', plot = pca_plot2, width = 4, height = 3)
+ggsave('simulated_example/figures/pca_plot.png', plot = pca_plot, width = 4, height = 3, dpi = 600)
+ggsave('simulated_example/figures/pca_plot.pdf', plot = pca_plot, width = 4, height = 3)
 
 
 ### Plot the band scores ----
