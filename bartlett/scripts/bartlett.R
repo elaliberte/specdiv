@@ -12,60 +12,160 @@ library(rasterVis)
 library(viridis)
 library(cowplot)
 library(magick)
-
+library(httr)
+library(jsonlite)
+library(downloader)
+library(rhdf5)
+library(gdata)
 
 ### Read spectral diversity functions ----
 source('functions/specdiv_functions.R')
+source('functions/band2raster.R')
 
 ### Download data ----
 
 # Create folder to store data
 if (!dir.exists('bartlett/data')) dir.create('bartlett/data')
 
-# Hyperspectral data cube (Warning: 344 MB)
-hyper_cube <- drive_download(file = as_id('155FcKLsrkrDSG24DVrzdkrQJXUFuVI-2'),
-                             path = 'bartlett/data/hyper_cube.tif')
+### Product codes (e.g. DP3.30006.001 for reflectance mosaics) can be found in the name of the readme.txt file for each product
+req.aop <- GET("http://data.neonscience.org/api/v0/products/DP3.30006.001") 
+avail.aop <- fromJSON(content(req.aop, as="text"), simplifyDataFrame=T, flatten=T)
+spec.urls <- unlist(avail.aop$data$siteCodes$availableDataUrls) ### all mosaics
+
+sel <- GET(spec.urls[intersect(grep("BART", spec.urls), grep("2018", spec.urls))]) ### select site and year
+sel.files <- fromJSON(content(sel, as="text"))
+sel.files$data$files$name
+
+dat <- grep("DP3_314000_4880000", sel.files$data$files$name) ### select dataset
+
+# H5 file containing hyperspectral data cube (Warning: 600 MB)
+download(sel.files$data$files$url[dat], paste('bartlett/data', sel.files$data$files$name[dat], sep="/"), mode="wb")
+
+### Read path spectral data
+f <- 'bartlett/data/NEON_D01_BART_DP3_314000_4880000_reflectance.h5'
+
+(reflInfo <- h5readAttributes(f,"/BART/Reflectance/Reflectance_Data"))
+
+rows <- reflInfo$Dimensions[1]
+cols <- reflInfo$Dimensions[2]
+resi <- reflInfo$Spatial_Resolution_X_Y [1]
+
+nodata <- reflInfo$Data_Ignore_Value
+
+### CRS info from file
+spInfo <- h5read(f,"/BART/Reflectance/Metadata/Coordinate_System/")
+spInfo$Proj4
+
+### alternatively look up EPSG code
+epsg <- make_EPSG()
+crscode <- epsg$code[grep('^(?!.*south).*zone=19.*WGS84', epsg$prj4, perl=TRUE)]
+mycrs <- CRS(paste0("+init=epsg:",as.character(crscode)))
+
+mapinfo <- unlist(strsplit(spInfo$Map_Info, ","))
+x <- as.numeric(mapinfo[4])
+y <- as.numeric(mapinfo[5])
 
 # Wavelenghts and full-width half maxima
-wavelengths <- drive_download(file = as_id('18AXLw4KVdQwYtTGWW_aFLOfigUZU7V7V'),
-               path = 'bartlett/data/wavelengths.csv')
-fwhms <- drive_download(file = as_id('1bpwrfu7PYuddTO1AQBV7Qp8e0Hf0crkF'),
-                              path = 'bartlett/data/fwhms.csv')
+wvl <- h5read(f,"/BART/Reflectance/Metadata/Spectral_Data/Wavelength")
+fwhm <- h5read(f,"/BART/Reflectance/Metadata/Spectral_Data/FWHM")
 
-# NDVI
-ndvi_tif <- drive_download(file = as_id('1Eumw5N7c6-uyFykNfr11Ho_J0b5DRed6'),
-                           path = 'bartlett/data/ndvi.tif')
+allbands <- 1:length(wvl)
+
+### read one band, spatial subset defined by x/y start/stop
+# test <- band2raster(path_h5 = f,band=34,nrows = rows, ncols=cols, res = resi,crs = mycrs,
+#                     xMin = x, yMax = y, xstop = 200, ystop = 200,
+#                     NoDataValue = nodata)
+
+### read all bands, full extent
+cube <- lapply(allbands, band2raster, path_h5 = f,nrows = rows, ncols=cols, res = resi,crs = mycrs,
+                    xMin = x, yMax = y,NoDataValue = nodata)
+
+cube_stack <- stack(cube)
+
+### testplot RGB bands
+plotRGB(cube_stack,58,34,19,stretch = "Lin")
+writeRaster(cube_stack, file= "bartlett/data/hyper_cube.tif", format="GTiff")
+
+# ### NDVI download
+# req.aop <- GET("http://data.neonscience.org/api/v0/products/DP3.30026.001") 
+# avail.aop <- fromJSON(content(req.aop, as="text"), simplifyDataFrame=T, flatten=T)
+# spec.urls <- unlist(avail.aop$data$siteCodes$availableDataUrls) ### all mosaics
+# 
+# sel <- GET(spec.urls[intersect(grep("BART", spec.urls), grep("2018", spec.urls))]) ### select site and year
+# sel.files <- fromJSON(content(sel, as="text"))
+# sel.files$data$files$name
+# 
+# dat <- grep("DP3_314000_4880000", sel.files$data$files$name) ### select dataset
+# 
+# # H5 file containing hyperspectral data cube (Warning: 600 MB)
+# download(sel.files$data$files$url[dat], paste('bartlett/data', sel.files$data$files$name[dat], sep="/"), mode="wb")
+
+### NDVI calculate 
+# NEON uses bands 54 and 96, close to 648.2 nm and 858.6 nm
+wvl[c(54,96)]
+ndvibands <- c(54,96)
+
+ndvibands_cube <- lapply(ndvibands, band2raster, path_h5 = f,nrows = rows, ncols=cols, res = resi,crs = mycrs,
+               xMin = x, yMax = y,NoDataValue = nodata)
+ndvibands_stack <- stack(ndvibands_cube)
+
+# calculate NDVI
+NDVI <- function(x) {
+  (x[,2]-x[,1])/(x[,2]+x[,1])
+}
+ndvi_ras <- calc(ndvibands_stack,NDVI)
+
+writeRaster(ndvi_ras, file= "bartlett/data/ndvi.tif", format="GTiff")
 
 # Digital surface model (DSM)
-dsm_tif <- drive_download(file = as_id('1EHanzWnvYWdOFyPptK8Jwxv3TccKd27u'),
-                            path = 'bartlett/data/dsm.tif')
+req.aop <- GET("http://data.neonscience.org/api/v0/products/DP3.30024.001") 
+avail.aop <- fromJSON(content(req.aop, as="text"), simplifyDataFrame=T, flatten=T)
+spec.urls <- unlist(avail.aop$data$siteCodes$availableDataUrls)
 
-# High resolution RGB orthomosaic (Warning: 126 MB)
-rgb_tif <- drive_download(file = as_id('1mKcq4B4ujmZNZ7CysU3EZ-kUPyI8b3SW'),
-                          path = 'bartlett/data/rgb.tif')
+sel <- GET(spec.urls[intersect(grep("BART", spec.urls), grep("2018", spec.urls))]) ### select site and year
+sel.files <- fromJSON(content(sel, as="text"))
+sel.files$data$files$name
+
+dat <- grep("DP3_314000_4880000_DSM", sel.files$data$files$name) ### select dataset
+
+sel.files$data$files$name[dat]
+download(sel.files$data$files$url[dat], paste('bartlett/data', sel.files$data$files$name[dat], sep="/"), mode="wb")
+
+
+# High resolution RGB orthomosaic (Warning: 88 MB)
+req.aop <- GET("http://data.neonscience.org/api/v0/products/DP3.30010.001") 
+avail.aop <- fromJSON(content(req.aop, as="text"), simplifyDataFrame=T, flatten=T)
+spec.urls <- unlist(avail.aop$data$siteCodes$availableDataUrls)
+
+sel <- GET(spec.urls[intersect(grep("BART", spec.urls), grep("2018", spec.urls))]) ### select site and year
+sel.files <- fromJSON(content(sel, as="text"))
+sel.files$data$files$name
+
+dat <- grep("314000_4880000", sel.files$data$files$name) ### select dataset
+
+sel.files$data$files$name[dat]
+download(sel.files$data$files$url[dat], paste('bartlett/data', sel.files$data$files$name[dat], sep="/"), mode="wb")
 
 
 #### Read data into R -----
-
-# Wavelength data
-wvl <- read_csv('bartlett/data/wavelengths.csv')
-fwhm <- read_csv('bartlett/data/fwhms.csv')
+# cleanup
+keep(specdiv, band2raster,wvl, fwhm, sure=T)
 
 # Hyperspectral data cube
 cube <- brick('bartlett/data/hyper_cube.tif')
-names(cube) <- wvl$band_name
+names(cube) <- paste("Band", seq(1:length(wvl)), sep="_")
 
 # Show red, green and blue band wavelengths
-(rgb_bands <- dplyr::filter(wvl, band %in% c(56, 28, 14)) )
+(rgb_bands <- wvl[c(56,28,16)])
 
 # Plot RGB composite, with bands R = 56, G = 28, B = 14
-png('bartlett/figures/cube_RGB.png', width = 2.8, height = 10, res = 100, units = "in")
+png('bartlett/figures/cube_RGB1.png', width = 2.8, height = 10, res = 100, units = "in")
 plotRGB(cube,
         r = 56, g = 28, b = 14, stretch = 'lin')
 dev.off()
 
 # Plot false colour composite, R = NIR (800 nm)
-dplyr::filter(wvl, band %in% c(84, 56, 28))
+wvl[c(84,56,28)]
 png('bartlett/figures/cube_FCC.png', width = 2.8, height = 10, res = 100, units = "in")
 plotRGB(cube,
         r = 84, g = 56, b = 28, stretch = 'Lin')
@@ -76,11 +176,11 @@ ndvi <- raster('bartlett/data/ndvi.tif')
 plot(ndvi)
 
 # DSM
-dsm <- raster('bartlett/data/dsm.tif')
+dsm <- raster('bartlett/data/NEON_D01_BART_DP3_314000_4880000_DSM.tif')
 plot(dsm)
 
 # High resolution RGB
-rgb <- brick('bartlett/data/rgb.tif')
+rgb <- brick('bartlett/data/2018_BART_4_314000_4880000_image.tif')
 png('bartlett/figures/hires_rgb.png', width = 2.8, height = 10, res = 1000, units = "in")
 plotRGB(rgb)
 dev.off()
@@ -89,8 +189,9 @@ dev.off()
 ### Pre-process spectra ----
 # Remove bad bands, apply Savitzky-Golay filter
 
-# Read cube as speclib
-cube_speclib <- speclib(spectra = cube, wavelength = wvl$wvl, fwhm = fwhm$fwhm)
+# Read cube as speclib 
+# TODO speclib does not read rasterBrick?
+cube_speclib <- speclib(spectra = cube, wavelength = wvl, fwhm = fwhm)
 
 # Mask bad bands
 band_mask <- data.frame(lb = c(383, 1340, 1790, 2400),
