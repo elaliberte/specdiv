@@ -130,30 +130,31 @@ rgb_tile2 <- ggRGB(rgb_cropped, r = 1, g = 2, b = 3) +
   theme_void() +
   geom_tile(data = cube_plots_df, aes(x = x, y = y), fill = NA, colour = 'white', size = 0.5) +
   ggtitle('Split region into communities') +
-  theme(plot.title = element_text(hjust = 0.5, size = 10))
+  theme(plot.title = element_text(hjust = 0.5, size = 13))
 rgb_tile2
 
 gamma_plot <- ggRGB(cube_cropped2, r = 1, g = 2, b = 3, stretch = 'lin') +
   theme_void() +
   #geom_tile(data = cube_plots_df, aes(x = x, y = y), fill = NA, colour = 'white', size = 0.5) +
   ggtitle(expression(Spectral~gamma*'-diversity')) +
-  theme(plot.title = element_text(hjust = 0.5, size = 10))
+  theme(plot.title = element_text(hjust = 0.5, size = 13))
 gamma_plot
 
 beta_plot <- ggRGB(beta_brick, r = 1, g = 2, b = 3, stretch = 'lin') +
   theme_void() +
   ggtitle(expression(beta~component)) +
-  theme(plot.title = element_text(hjust = 0.5, size = 10))
+  theme(plot.title = element_text(hjust = 0.5, size = 13))
 beta_plot
 
 
 alpha_plot <- ggRGB(alpha_brick, r = 1, g = 2, b = 3, stretch = 'lin') +
   theme_void() +
+  geom_tile(data = cube_plots_df, aes(x = x, y = y), fill = NA, colour = 'white', size = 0.5) +
   ggtitle(expression(alpha~component)) +
-  theme(plot.title = element_text(hjust = 0.5, size = 10))
+  theme(plot.title = element_text(hjust = 0.5, size = 13))
 alpha_plot
 
 # Make multi-panel figure
-png('bartlett/figures/conceptual_figure_partitioning.png', width = 9, height = 2.5, res = 1200, units = 'in')
+png('bartlett/figures/conceptual_figure_partitioning.png', width = 11, height = 2.5, res = 1200, units = 'in')
 plot_grid(rgb_tile2, gamma_plot, beta_plot, alpha_plot, align = 'hv', nrow = 1)
 dev.off()
