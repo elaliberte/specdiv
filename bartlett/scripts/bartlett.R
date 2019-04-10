@@ -93,8 +93,8 @@ dev.off()
 cube_speclib <- speclib(spectra = cube, wavelength = wvl$wvl, fwhm = fwhm$fwhm)
 
 # Mask bad bands
-band_mask <- data.frame(lb = c(383, 1340, 1790, 2400),
-                        up = c(400, 1445, 1955, 2512))
+band_mask <- data.frame(lb = c(350, 1340, 1790, 2400),
+                        up = c(400, 1445, 1955, 2550))
 hsdar::mask(cube_speclib) <- band_mask
 
 # Apply Savitzky-Golay filter (Warning: takes a few minutes)
