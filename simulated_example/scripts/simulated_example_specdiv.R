@@ -260,6 +260,7 @@ col_RGB <- site_scores %>%
 beta_high <- pixels_scores %>%
   left_join(col_RGB, by = 'plantID')
 
+
 # Plot it
 max_beta_plot <- ggplot(beta_high, aes(x = X, y = Y)) +
   geom_tile(fill = beta_high$RGB_col, alpha = 0.75) +
@@ -306,6 +307,9 @@ beta_high_PCs <- beta_high %>%
 beta_high_points <- SpatialPixelsDataFrame(beta_high_xy, beta_high_PCs)
 beta_high_brick <- brick(beta_high_points)
 
+# Same, but for original spectral data
+beta_high_brick_original_points <- SpatialPixelsDataFrame(beta_high_xy, beta_spectra)
+beta_high_brick_original <- brick(beta_high_brick_original_points)
 
 # Alpha high scenario
 alpha_high_xy <- alpha_high %>%
@@ -319,6 +323,29 @@ alpha_high_brick <- brick(alpha_high_points)
 ### Calculate spectral diversity for both scenarios ----
 beta_high_sdiv <- specdiv(beta_high_brick, fact = 5)
 alpha_high_sdiv <- specdiv(alpha_high_brick, fact = 5)
+
+# Compare with beta high original spectral data
+beta_high_sdiv_original <- specdiv(beta_high_brick_original, fact = 5)
+
+# SS: same!
+beta_high_sdiv$ss
+beta_high_sdiv_original$ss
+
+# Sdiv: same!
+beta_high_sdiv$sdiv
+beta_high_sdiv_original$sdiv
+
+# FCSD: of course very different here!
+beta_high_sdiv$fcsd
+beta_high_sdiv_original$fcsd
+
+# LCSD: same!
+plot(beta_high_sdiv$rasters$beta_lcsd)
+plot(beta_high_sdiv_original$rasters$beta_lcsd)
+
+# alpha: same!
+plot(beta_high_sdiv$rasters$alpha_sdiv)
+plot(beta_high_sdiv_original$rasters$alpha_sdiv)
 
 # Merge the two alpha and beta SS components tables
 ss_beta_high <- beta_high_sdiv$ss %>% 
