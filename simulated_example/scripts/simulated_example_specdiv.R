@@ -508,3 +508,17 @@ fcsd_plot
 # Plot LCSD
 ggsave('simulated_example/figures/fcsd.png', plot = fcsd_plot, width = 9, height = 6, dpi = 600)
 ggsave('simulated_example/figures/fcsd.pdf', plot = fcsd_plot, width = 9, height = 6)
+
+
+### Plot SD, LCSD and FCSD in one multi-panel figure
+alpha_plot2 <- alpha_plot + ggtitle('a') +
+  theme(plot.title = element_text(size = 20, face = 'bold'))
+lcsd_plot3 <- lcsd_plot + ggtitle('b') +
+  theme(plot.title = element_text(size = 20, face = 'bold'))
+fcsd_plot2 <- fcsd_plot +
+  ggtitle('c') +
+  theme(plot.title = element_text(size = 20, face = 'bold'))
+indices_plot <- ggarrange(alpha_plot2, lcsd_plot3, fcsd_plot2, nrow = 3, ncol = 1,
+                          heights = c(1, 1, 1.82))
+ggsave('simulated_example/figures/indices.png', plot = indices_plot, width = 6, height = 12, dpi = 600)
+ggsave('simulated_example/figures/indices.pdf', plot = indices_plot, width = 9, height = 20)
