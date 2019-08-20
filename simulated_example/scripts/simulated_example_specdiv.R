@@ -511,14 +511,46 @@ ggsave('simulated_example/figures/fcsd.pdf', plot = fcsd_plot, width = 9, height
 
 
 ### Plot SD, LCSD and FCSD in one multi-panel figure
-alpha_plot2 <- alpha_plot + ggtitle('a') +
-  theme(plot.title = element_text(size = 20, face = 'bold'))
-lcsd_plot3 <- lcsd_plot + ggtitle('b') +
-  theme(plot.title = element_text(size = 20, face = 'bold'))
-fcsd_plot2 <- fcsd_plot +
-  ggtitle('c') +
-  theme(plot.title = element_text(size = 20, face = 'bold'))
-indices_plot <- ggarrange(alpha_plot2, lcsd_plot3, fcsd_plot2, nrow = 3, ncol = 1,
-                          heights = c(1, 1, 1.82))
+alpha_plot2 <- alpha_plot + ggtitle(expression('(a)'~SD[alpha])) +
+  theme(plot.title = element_text(size = 24, face = 'bold'))
+lcsd_plot3 <- lcsd_plot + ggtitle(expression('(b)'~LCSD[beta])) +
+  theme(plot.title = element_text(size = 24, face = 'bold'))
+
+# Plot FCSD by PC 1 and PC2
+fcsd_pc1 <- fcsd_all %>% 
+  dplyr::filter(PC == 'PC1')
+fcsd_pc2 <- fcsd_all %>% 
+  dplyr::filter(PC == 'PC2')
+fcsd_plot_pc1 <- ggplot(fcsd_pc1, aes(x = X, y = Y)) +
+  geom_tile(aes(fill = value), colour = 'black', width = sqrt(len), height = sqrt(len), size = 1) +
+  #geom_text(data = plots, aes(label = comm), colour = 'white', size = 5) +
+  facet_grid(. ~ scenario, labeller = label_parsed) +
+  coord_equal() +
+  scale_fill_viridis(direction = -1, option = 'magma',
+                     name = expression(FCSD[alpha])) +
+  theme_void() +
+  theme(strip.text.x = element_text(size = 20),
+        strip.text.y = element_text(size = 20,
+                                    angle = 270))
+fcsd_plot_pc2 <- ggplot(fcsd_pc2, aes(x = X, y = Y)) +
+  geom_tile(aes(fill = value), colour = 'black', width = sqrt(len), height = sqrt(len), size = 1) +
+  #geom_text(data = plots, aes(label = comm), colour = 'white', size = 5) +
+  facet_grid(. ~ scenario, labeller = label_parsed) +
+  coord_equal() +
+  scale_fill_viridis(direction = -1, option = 'magma',
+                     name = expression(FCSD[alpha])) +
+  theme_void() +
+  theme(strip.text.x = element_text(size = 20),
+        strip.text.y = element_text(size = 20,
+                                    angle = 270))
+
+fcsd_plot_pc1_2 <- fcsd_plot_pc1 +
+  ggtitle(expression('(c)'~FCSD[alpha]*','~PC1)) +
+  theme(plot.title = element_text(size = 24, face = 'bold'))
+fcsd_plot_pc2_2 <- fcsd_plot_pc2 +
+  ggtitle(expression('(d)'~FCSD[alpha]*','~PC2)) +
+  theme(plot.title = element_text(size = 24, face = 'bold'))
+indices_plot <- ggarrange(alpha_plot2, lcsd_plot3, fcsd_plot_pc1_2, fcsd_plot_pc2_2, 
+                          nrow = 4, ncol = 1)
 ggsave('simulated_example/figures/indices.png', plot = indices_plot, width = 6, height = 12, dpi = 600)
 ggsave('simulated_example/figures/indices.pdf', plot = indices_plot, width = 9, height = 20)
